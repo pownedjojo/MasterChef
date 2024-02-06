@@ -5,14 +5,16 @@ from bs4 import BeautifulSoup
 ## PARSE JSON FILES TO KEEP ONLY RECIPES (RECEIPE ID)
 ## Network call to grab recipe details (ingredients & preparation steps)
 
-JSON_RECEIPES_FILE_PATH = "recipes1.json"
 MAX_COOKING_TIME = 30
 
-def parse_recipes_json_file(file_name) -> list:
-    with open(file_name, 'r', encoding='utf-8') as file:
-        data = json.load(file)
+def get_recipe_ids(page_number: int):
+    endpoint_url = f"https://mgs.quitoque.fr/graphql?operationName=getFilterRecipes&variables=%7B%22page%22%3A{page_number}%2C%22filter%22%3A%7B%22name%22%3A%22%22%2C%22facets%22%3A%5B%5D%7D%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%221763069ea168727f095193101384d9000684552be5f6e67b3e0c41921f188309%22%7D%7D"
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36'}
+    response = requests.get(endpoint_url, headers=headers)
+    json_data = response.json()
 
-    recipes = data["data"]["filterRecipes"]["recipes"]
+    recipes = json_data["data"]["filterRecipes"]["recipes"]
+
     recipe_ids = []
     for recipe in recipes:
         for pool in recipe['pools']:
@@ -25,7 +27,6 @@ def parse_recipes_json_file(file_name) -> list:
 def get_recipe_details_from_api_call(recipe_id: str):
     endpoint_url = f"https://mgs.quitoque.fr/graphql?operationName=getRecipe&variables=%7B%22id%22%3A%22{recipe_id}%22%2C%22date%22%3Anull%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%2204af4d1a48fd536a67292733e23a2afcf6d0da9770ab07055c59b754eec9bd6d%22%7D%7D"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36'}
-
     response = requests.get(endpoint_url, headers=headers)
     json_data = response.json()
     
@@ -51,7 +52,7 @@ def get_recipe_details_from_api_call(recipe_id: str):
         print(f"\nSTEP {index}: {step_description}")
 
 def main():
-    recipe_ids = parse_recipes_json_file(JSON_RECEIPES_FILE_PATH)
+    recipe_ids = get_recipe_ids(page_number=0)
 
     for recipe_id in recipe_ids:
         ## TODO: Call get_recipe_details_from_api_call()
@@ -59,7 +60,7 @@ def main():
 
 main()
 
-get_recipe_details_from_api_call(recipe_id="12122")
+#get_recipe_details_from_api_call(recipe_id="12122")
 
-## TODO: STORE EVERY RECIPE !
+## TODO: STORE EVERY RECIPE IN CSV ? => How to store an array (ingredients)
 ## Create DB model: recipe_id, name, description, nutriscore, ingredients, steps
