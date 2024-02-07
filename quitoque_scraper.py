@@ -1,13 +1,12 @@
-import requests, json
+import requests, json, csv, time
 from bs4 import BeautifulSoup
-
-## GET JSON FROM operationName getFilterRecipes Request (use Network dev tool within browser)
-## PARSE JSON FILES TO KEEP ONLY RECIPES (RECEIPE ID)
-## Network call to grab recipe details (ingredients & preparation steps)
+from typing import List
+from models import Recipe
 
 MAX_COOKING_TIME = 30
+OUTPUT_CSV_FILE_NAME = "recipes.csv"
 
-def get_recipe_ids(page_number: int):
+def get_recipes_ids(page_number: int) -> List[str]:
     endpoint_url = f"https://mgs.quitoque.fr/graphql?operationName=getFilterRecipes&variables=%7B%22page%22%3A{page_number}%2C%22filter%22%3A%7B%22name%22%3A%22%22%2C%22facets%22%3A%5B%5D%7D%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%221763069ea168727f095193101384d9000684552be5f6e67b3e0c41921f188309%22%7D%7D"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36'}
     response = requests.get(endpoint_url, headers=headers)
@@ -24,43 +23,48 @@ def get_recipe_ids(page_number: int):
     return recipe_ids
 
 ## Example recipe_id: "12599"
-def get_recipe_details_from_api_call(recipe_id: str):
+def get_recipe_details(recipe_id: str) -> Recipe:
     endpoint_url = f"https://mgs.quitoque.fr/graphql?operationName=getRecipe&variables=%7B%22id%22%3A%22{recipe_id}%22%2C%22date%22%3Anull%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%2204af4d1a48fd536a67292733e23a2afcf6d0da9770ab07055c59b754eec9bd6d%22%7D%7D"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36'}
+
+    ## TODO: try/catch
     response = requests.get(endpoint_url, headers=headers)
     json_data = response.json()
-    
     recipe_data = json_data["data"]["recipe"]
-    short_description = recipe_data["shortDescription"]
-    nutriscore = recipe_data["nutriscore"]
-    print(f"DESCRITPION: {short_description}")
-    print(f"NURISCORE: {nutriscore}")
-    
-    recipe_details = recipe_data["pools"][0]["cookingModes"][0]
+    return Recipe.from_json_data(recipe_data)
 
-    recipe_ingredients = recipe_data["pools"][0]["cookingModes"][0]["stacks"]["ingredients"]
-    for ingredient in recipe_ingredients:
-        quantity = ingredient["literalQuantity"]
-        product = ingredient["product"]
-        ingredient_id = product["id"]
-        ingredient_name = product["name"]
-        print(f"INGREDIENT: name: {ingredient_name} - name: {ingredient_name} - quantity: {quantity} - id: {ingredient_id}")
+def write_to_csv(recipes: List[Recipe]):
+    fieldnames = ['recipe_id', 'recipe_name', 'recipe_description', 'recipe_nutriscore', 'recipe_ingredients', 'recipe_reproduction_steps']
+    with open(OUTPUT_CSV_FILE_NAME, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        for recipe in recipes:
+            ingredients_str = "\n".join([f"{ingredient['name']}, {ingredient['quantity']}, {ingredient['id']}" for ingredient in recipe.ingredients])
+            preparation_steps_str = "\n".join([f"Step {step['step_number']}: {step['description']}" for step in recipe.preparation_steps])
 
-    recipe_preparation_steps = recipe_details["steps"]
-    for index, step in enumerate(recipe_preparation_steps):
-        step_description = step["description"]
-        print(f"\nSTEP {index}: {step_description}")
+            writer.writerow({
+                'recipe_id': recipe.recipe_id,
+                'recipe_name': recipe.name,
+                'recipe_description': recipe.short_description,
+                'recipe_nutriscore': recipe.nutriscore,
+                'recipe_ingredients': ingredients_str, 
+                'recipe_reproduction_steps': preparation_steps_str
+            })
 
 def main():
-    recipe_ids = get_recipe_ids(page_number=0)
+    recipe_ids = get_recipes_ids(page_number=0)
+    unique_recipe_ids = list(set(recipe_ids))
+    print(f"Fetched unique recipes_ids: {unique_recipe_ids}")
 
-    for recipe_id in recipe_ids:
-        ## TODO: Call get_recipe_details_from_api_call()
-        print(recipe_id)
+    recipes_details = []
+    for recipe_id in unique_recipe_ids:
+        time.sleep(8)
+        print(f"Will fetch recipe details with id: {recipe_id}")
+        recipe_details = get_recipe_details(recipe_id)
+        recipes_details.append(recipe_details)
+
+    print("Will write recipes to CSV file")
+    write_to_csv(recipes_details)
+    print("Recipes succesfuly stored in CSV file")
 
 main()
-
-#get_recipe_details_from_api_call(recipe_id="12122")
-
-## TODO: STORE EVERY RECIPE IN CSV ? => How to store an array (ingredients)
-## Create DB model: recipe_id, name, description, nutriscore, ingredients, steps
