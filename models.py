@@ -33,5 +33,4 @@ class Recipe:
     def __str__(self):
         ingredients_str = "\n".join([f"Name: {ingredient['name']}, Quantity: {ingredient['quantity']}, ID: {ingredient['id']}" for ingredient in self.ingredients])
         preparation_steps_str = "\n".join([f"Step {step['step_number']}: {step['description']}" for step in self.preparation_steps])
-        
         return f"Recipe ID: {self.recipe_id}\nName: {self.name}\nShort Description: {self.short_description}\nNutriscore: {self.nutriscore}\nIngredients:\n{ingredients_str}\nPreparation Steps:\n{preparation_steps_str}"

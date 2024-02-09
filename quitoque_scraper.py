@@ -11,7 +11,6 @@ def get_recipes_ids(page_number: int) -> List[str]:
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36'}
     response = requests.get(endpoint_url, headers=headers)
     json_data = response.json()
-
     recipes = json_data["data"]["filterRecipes"]["recipes"]
 
     recipe_ids = []
@@ -26,8 +25,6 @@ def get_recipes_ids(page_number: int) -> List[str]:
 def get_recipe_details(recipe_id: str) -> Recipe:
     endpoint_url = f"https://mgs.quitoque.fr/graphql?operationName=getRecipe&variables=%7B%22id%22%3A%22{recipe_id}%22%2C%22date%22%3Anull%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%2204af4d1a48fd536a67292733e23a2afcf6d0da9770ab07055c59b754eec9bd6d%22%7D%7D"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36'}
-
-    ## TODO: try/catch
     response = requests.get(endpoint_url, headers=headers)
     json_data = response.json()
     recipe_data = json_data["data"]["recipe"]
@@ -35,7 +32,7 @@ def get_recipe_details(recipe_id: str) -> Recipe:
 
 def write_to_csv(recipes: List[Recipe]):
     fieldnames = ['recipe_id', 'recipe_name', 'recipe_description', 'recipe_nutriscore', 'recipe_ingredients', 'recipe_reproduction_steps']
-    with open(OUTPUT_CSV_FILE_NAME, mode='w', newline='', encoding='utf-8') as file:
+    with open(OUTPUT_CSV_FILE_NAME, mode="a", newline='', encoding='utf-8') as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         for recipe in recipes:
@@ -52,13 +49,15 @@ def write_to_csv(recipes: List[Recipe]):
             })
 
 def main():
-    recipe_ids = get_recipes_ids(page_number=0)
+    ## Pages 0 to 20 already done
+    current_page_number = 20
+    recipe_ids = get_recipes_ids(page_number=current_page_number)
     unique_recipe_ids = list(set(recipe_ids))
-    print(f"Fetched unique recipes_ids: {unique_recipe_ids}")
+    print(f"Fetched page: {current_page_number} with unique recipes_ids: {unique_recipe_ids}")
 
     recipes_details = []
     for recipe_id in unique_recipe_ids:
-        time.sleep(8)
+        time.sleep(4)
         print(f"Will fetch recipe details with id: {recipe_id}")
         recipe_details = get_recipe_details(recipe_id)
         recipes_details.append(recipe_details)
