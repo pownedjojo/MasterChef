@@ -49,21 +49,22 @@ def write_to_csv(recipes: List[Recipe]):
             })
 
 def main():
-    ## Pages 0 to 20 already done
-    current_page_number = 20
-    recipe_ids = get_recipes_ids(page_number=current_page_number)
-    unique_recipe_ids = list(set(recipe_ids))
-    print(f"Fetched page: {current_page_number} with unique recipes_ids: {unique_recipe_ids}")
+    for current_page_number in range(31):
+        time.sleep(1)
+        print(f"Fetching page: {current_page_number}")
+        recipe_ids = get_recipes_ids(page_number=current_page_number)
+        unique_recipe_ids = list(set(recipe_ids))
+        print(f"Fetched page: {current_page_number} with unique recipes_ids: {unique_recipe_ids}")
 
-    recipes_details = []
-    for recipe_id in unique_recipe_ids:
-        time.sleep(4)
-        print(f"Will fetch recipe details with id: {recipe_id}")
-        recipe_details = get_recipe_details(recipe_id)
-        recipes_details.append(recipe_details)
+        recipes_details = []
+        for recipe_id in unique_recipe_ids:
+            time.sleep(2)
+            print(f"Will fetch recipe details with id: {recipe_id}")
+            recipe_details = get_recipe_details(recipe_id)
+            recipes_details.append(recipe_details)
 
-    print("Will write recipes to CSV file")
-    write_to_csv(recipes_details)
-    print("Recipes succesfuly stored in CSV file")
+        print("Will write recipes to CSV file")
+        write_to_csv(recipes_details)
+        print("Recipes succesfuly stored in CSV file")
 
 main()
