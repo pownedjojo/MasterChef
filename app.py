@@ -41,8 +41,9 @@ def filter_recipes_ingredients(st, df):
 
     if not filtered_recipes.empty and selected_ingredients:
         st.dataframe(filtered_recipes[['recipe_id', 'recipe_name', 'parsed_ingredients', 'num_ingredients']], use_container_width=True)
-    elif filtered_recipes.empty and not selected_ingredients:
-        st.markdown(f"### Aucune recette trouvée contenant les ingrédients: '{selected_ingredients}'.")
+    elif filtered_recipes.empty and selected_ingredients:
+        ingredients_str = ", ".join(f"**{ingredient}**" for ingredient in selected_ingredients)
+        st.markdown(f"Aucune recette trouvée contenant les ingrédients: {ingredients_str}.")
     else:
         st.markdown(f"Veuillez sélectionner des ingrédients pour afficher les recettes correspondantes")
 
@@ -121,6 +122,7 @@ def main():
 
     # Filter recipes based on selected ingredients
     st.markdown(f"## Trouver des recettes utilisant certains ingrédients")
+    st.markdown("**Les recettes contenant tous les ingrédients sélectionnés seront affichées ici ci-dessous.**")
     filter_recipes_ingredients(st=st, df=df_recipes)
     
     # Show ingredients distribution graph
@@ -173,8 +175,7 @@ def main():
         st.dataframe(df_recipes[columns_to_display], use_container_width=True)
     
     ## TODO:
-    # - Link to quitoque (recipe_id)
-    # - Create liste de courses
+    # - Create groceries list
 
 if __name__ == "__main__":
     main()
