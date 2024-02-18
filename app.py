@@ -88,10 +88,13 @@ def random_recipe_for_category(st, df, category):
 
         if not filtered_recipes.empty:
             random_recipe = filtered_recipes.sample()
-            st.markdown(f"### {random_recipe.iloc[0]['recipe_name']}")
-            st.markdown(f"**Id :** {random_recipe.iloc[0]['recipe_id']}")
+            random_recipe_id =  random_recipe.iloc[0]['recipe_id']
+            random_recipe_url = f"https://www.quitoque.fr/recette/{random_recipe_id}"
+            st.markdown(f"### {random_recipe.iloc[0]['recipe_name']} ([{random_recipe_id}]({random_recipe_url}))", unsafe_allow_html=True)
             ingredients_string = ", ".join(random_recipe.iloc[0]['parsed_ingredients'])
             st.markdown(f"**Ingrédients :** {ingredients_string}")
+            st.markdown(f"**Etapes de préparation :**")
+            st.markdown(f"{random_recipe.iloc[0]['recipe_reproduction_steps']}")
         else:
             st.write("Aucune recette trouvée dans cette catégorie.")
 
@@ -103,6 +106,12 @@ def find_similar_recipes(df, central_recipe_id, min_shared_ingredients):
     df['shared_ingredients_count'] = df.apply(lambda row: calculate_shared_ingredients(row['parsed_ingredients'], central_ingredients) if row['recipe_id'] != central_recipe_id else 0, axis=1)
     similar_recipes = df[(df['recipe_id'] != central_recipe_id) & (df['shared_ingredients_count'] >= min_shared_ingredients)].sort_values(by='shared_ingredients_count', ascending=False)
     return similar_recipes
+
+def plot_recipe_complexity_histogram(df):
+    fig = px.histogram(df, x='num_ingredients', nbins=50)
+    fig.update_xaxes(title="Nombre d'ingrédients")
+    fig.update_yaxes(title="Nombre de recettes")
+    st.plotly_chart(fig, use_container_width=True)
 
 def main():
     st.set_page_config(page_title="Master Chef", page_icon="👨‍🍳", layout="wide", initial_sidebar_state="auto")
@@ -124,13 +133,6 @@ def main():
     st.markdown(f"## Trouver des recettes utilisant certains ingrédients")
     st.markdown("**Les recettes contenant tous les ingrédients sélectionnés seront affichées ici ci-dessous.**")
     filter_recipes_ingredients(st=st, df=df_recipes)
-    
-    # Show ingredients distribution graph
-    st.markdown("---")
-    st.markdown(f"## Répartitions des ingrédients les plus utilisés dans les recettes")
-    num_most_used_ingredients = st.number_input('Nombre d’ingrédients les plus utilisés à afficher', min_value=1, value=20, step=1)
-    plot_ingredients_repartitions(st=st, df=df_recipes, nbr_of_most_used_ingredients=num_most_used_ingredients)
-    st.markdown("---")
 
     ## Find the X recipes with the least amount of ingredients
     st.markdown(f"## Recettes utilisant le moins d'ingrédients")
@@ -139,14 +141,9 @@ def main():
     sorted_recipes_by_number_of_ingredients = sorted_recipes.iloc[:num_recipes]
     columns_to_display = ['recipe_id', 'recipe_name', 'parsed_ingredients', 'num_ingredients']
     st.dataframe(sorted_recipes_by_number_of_ingredients[columns_to_display], use_container_width=True)
-    st.markdown("---")
-
-    ## Display Fish/Meat recipes
-    st.markdown(f"## Répartitions des recettes intégrant de la viande et du poisson")
-    display_fish_meat_distributions(st=st, df=df_recipes)
-    st.markdown("---")
 
     ## Show random Recipe
+    st.markdown("---")
     st.markdown(f"## Choisir une recette")
     recipe_category = st.selectbox('Choisissez une catégorie de recette :', ['Poisson', 'Viande'])
     random_recipe_for_category(st=st, df=df_recipes, category=recipe_category)
@@ -155,7 +152,7 @@ def main():
     ## Find similar recipes from a "Central" recipe
     st.markdown(f"## Trouver des recettes similaires")
     recipe_options = df_recipes.apply(lambda x: f"{x['recipe_id']} - {x['recipe_name']}", axis=1).tolist()
-    selected_recipe = st.selectbox('Sélectionnez l\'ID de la recette de départ :', recipe_options)
+    selected_recipe = st.selectbox('Sélectionnez votre recette de départ :', recipe_options)
     central_recipe_id = int(selected_recipe.split(' - ')[0])
     min_shared_ingredients = st.number_input('Nombre minimum d\'ingrédients en commun :', min_value=1, value=1, step=1)
 
@@ -167,6 +164,18 @@ def main():
             st.dataframe(similar_recipes[['recipe_id', 'recipe_name', 'parsed_ingredients', 'num_ingredients']], use_container_width=True)
         else:
             st.write("Aucune recette similaire trouvée.")
+    st.markdown("---")
+
+    st.markdown(f"# Visualisation des données")
+    st.markdown(f"## 1. Répartition du nombre d'ingrédients par recette")
+    plot_recipe_complexity_histogram(df_recipes)
+
+    st.markdown(f"## 2. Répartitions des ingrédients les plus utilisés dans les recettes")
+    num_most_used_ingredients = st.number_input('Nombre d’ingrédients les plus utilisés à afficher', min_value=1, value=20, step=1)
+    plot_ingredients_repartitions(st=st, df=df_recipes, nbr_of_most_used_ingredients=num_most_used_ingredients)
+
+    st.markdown(f"## 3. Répartitions des recettes intégrant de la viande et du poisson")
+    display_fish_meat_distributions(st=st, df=df_recipes)
     st.markdown("---")
 
     # Show dataset
