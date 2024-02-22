@@ -1,5 +1,9 @@
 # MasterChef: Discover Simple and Delicious Recipes 🍳
 
+[![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-390/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
 [MasterChef](https://masterchef.streamlit.app/) is a Streamlit application designed to inspire your culinary journey with a collection of simple and delicious recipes. 
 
 Whether you're looking for quick meals that can be prepared in under 30 minutes or seeking to incorporate specific ingredients into your dishes, MasterChef is your go-to guide for culinary inspiration.
